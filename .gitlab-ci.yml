@@ -6,3 +6,22 @@ variables:
   BUILD_ARGS: 'APP_NAME=kaco-fb'
   IMAGE_TITLE: 'SolarView KACO-Proxy'
   UPDATE_CHECK_URLS: 'http://www.solarview.info/downloads/kaco-fb.zip'
+
+fix_version_tag:
+  extends: .docker_support:.with_bare_image
+  stage: pre_test
+  artifacts:
+    paths:
+    - tags
+    - labels
+  script:
+  - set -euo pipefail
+  - run() { docker run --rm "${IMAGE_NAME}:${BUILD_CACHE}" sh -c "${@}"; }
+  - APP_VERSION="$(run 'cd "${APP_HOME}" && touch kaco_day.dat kaco_month.dat kaco_year.dat kaco_total.dat && "./${APP_NAME}" -v' | sed -n -E 's/.* V ([^\t ]+).*/\1/p')"
+
+  - mkdir -p tags
+  - echo >tags/app_version "${IMAGE_NAME}:v${APP_VERSION}"
+
+  - oci='org.opencontainers.image'
+  - mkdir -p labels
+  - echo >"labels/${oci}.version"  "${oci}.version=${APP_VERSION}"
